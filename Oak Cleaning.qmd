@@ -1,0 +1,39 @@
+---
+title: "Oak Data Exploration"
+format: html
+editor: visual
+---
+
+## Oak exploratory data analysis and cleaning
+
+```{r}
+install.packages("tidyverse")
+
+library(readxl)
+library(tidyverse)
+Survival_HeightApril26Blocks7_6Clean <- read_excel("Oak Project/Data/Survival_HeightApril26Blocks7&6Clean.xlsx", 
+                                                   sheet = "Input1", skip = 1)
+View(Survival_HeightApril26Blocks7_6Clean)
+
+names(Survival_HeightApril26Blocks7_6Clean)
+```
+
+```{r}
+Survival_HeightApril26Blocks7_6Clean <-
+  Survival_HeightApril26Blocks7_6Clean |> 
+  rename( page_num = "Page #",
+          date =  "MM/DD/YYYY",
+          recorder = "Name" ,
+          block = "#...4",
+          tag_num = "#...5",
+          oak_type = "NR, S, or A",
+          treatment = "AC, OA, NP, DT, or DL",
+          oa_microclimate ="TH, TI, CN",
+          seedling_ht_cm = "(cm)",
+          num_leaves = "#...10",
+          num_dead_leaves = "#...11",
+          leaf_greenness = "%",
+          num_germinated = "#...13",
+          rcd = "(mm)",
+          notes = "as written on data sheet")
+```
