@@ -12,17 +12,43 @@ install.packages("tidyverse")
 library(readxl)
 library(tidyverse)
 library(ggplot2)
-Survival_HeightApril26Blocks7_6Clean <- read_excel("Oak Project/Data/Survival_HeightApril26Blocks7&6Clean.xlsx",
-                                                   sheet = "Input1", skip = 1)
-```
-View(Survival_HeightApril26Blocks7_6Clean)
+library(readr)
 
-names(Survival_HeightApril26Blocks7_6Clean)
+oak_data <- list.files(path = "Oak Project/Data",
+                       pattern = "*6Clean.xlsx",
+                       full.names = TRUE) |> 
+  lapply(read_excel,
+         na = "NA", sheet = "Input1",
+         skip = 1) |> 
+  bind_rows()
 ```
 
 ```{r}
-Survival_HeightApril26Blocks7_6Clean <-
-  Survival_HeightApril26Blocks7_6Clean |>
+#importing and renaming October data
+oct_data <- Survival_HeightOct2025Clean <- read_excel("Oak Project/Data/Survival_HeightOct2025Clean.xlsx", 
+                                                      sheet = "Input1", skip = 1)
+oct_data <- 
+  oct_data |> 
+  rename(page_num = "Page #",
+         date = "MM/DD/YYYY",
+         recorder = "Code",
+         block = "#...4",
+         tag_num = "#...5",
+         oak_type = "NR, S, or A",
+         treatment = "AC, OA, SA, NP, or DT",
+         seedling_ht_cm = "(cm)...8",
+         num_leaves = "#...9",
+         base_seedling_circumference = "(cm)...10",
+         base_seedling_diameter = "(mm)",
+         is_saliva_apiana_alive = "Yes, No, or Missing?",
+         notes = "as written on data sheet")
+
+```
+
+```{r}
+#renaming non-oct data
+oak_data <-
+  oak_data |>
   rename(
     page_num = "Page #",
     date = "MM/DD/YYYY",
@@ -41,8 +67,10 @@ Survival_HeightApril26Blocks7_6Clean <-
     notes = "as written on data sheet"
   )
 
-View(Survival_HeightApril26Blocks7_6Clean)
-glimpse(Survival_HeightApril26Blocks7_6Clean)
+#STILL NEED TO JOIN OCT DATA WITH REST!!!!!!!!!!!!!!!!
+
+View(oak_data)
+glimpse(oak_data)
 # 37 rows, 15 columns.
 # To do:
 # oa_microclimate: Change NA to actual NAs
@@ -53,4 +81,42 @@ glimpse(Survival_HeightApril26Blocks7_6Clean)
 # Same with num_germinated, rcd
 length(Survival_HeightApril26Blocks7_6Clean$tag_num)
 unique(Survival_HeightApril26Blocks7_6Clean$tag_num)
+```
+
+```{r}
+oak_data_clean <- oak_data |> 
+  separate(tag_num, into = c("tag_num", "acorn_num"), sep = "A") |> 
+  mutate(tag_num = as.numeric(tag_num),
+         acorn_num = as.numeric(acorn_num)) |> 
+  mutate(leaf_greenness = as.numeric(leaf_greenness),
+         dead = case_when(
+           seedling_ht_cm == 0 ~ "dead",
+           seedling_ht_cm > 0 ~ NA
+         ))
+```
+
+```{r}
+#Amy is still working on this!!!!!!!!
+oak_data_clean |> 
+  select(tag_num, acorn_num) |> 
+  distinct() |> 
+  arrange(tag_num)
+
+acorn_id_table <- oak_data_clean |> 
+  select(tag_num, block, treatment, oa_microclimate) |> 
+  distinct() |> 
+  arrange(tag_num) |> 
+  mutate(acorn1 = 1, acorn2 = 2, acorn3 = 3) |> 
+  pivot_longer(cols = c(acorn1, acorn2, acorn3),
+               names_to = "whatever", 
+               values_to = "acorn_num") |> 
+  select(-whatever)
+
+oak_data_clean |>  full_join(acorn_id_table)
+```
+
+```{r}
+oak_data |> 
+  group_by(block,date) |> 
+  count()
 ```
