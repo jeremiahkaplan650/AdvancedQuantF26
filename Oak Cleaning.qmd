@@ -7,6 +7,7 @@ editor: visual
 ## Oak exploratory data analysis and cleaning
 
 ```{r}
+#installing packages and importing 4/5 datasheets
 install.packages("tidyverse")
 
 library(readxl)
@@ -15,7 +16,7 @@ library(ggplot2)
 library(readr)
 
 oak_data <- list.files(path = "Oak Project/Data",
-                       pattern = "*6Clean.xlsx",
+                       pattern = "^[^~].*6Clean\\.xlsx$",
                        full.names = TRUE) |> 
   lapply(read_excel,
          na = "NA", sheet = "Input1",
@@ -25,7 +26,7 @@ oak_data <- list.files(path = "Oak Project/Data",
 
 ```{r}
 #importing and renaming October data
-oct_data <- Survival_HeightOct2025Clean <- read_excel("Oak Project/Data/Survival_HeightOct2025Clean.xlsx", 
+oct_data <- read_excel("Oak Project/Data/Survival_HeightOct2025Clean.xlsx", 
                                                       sheet = "Input1", skip = 1)
 oct_data <- 
   oct_data |> 
@@ -41,7 +42,9 @@ oct_data <-
          base_seedling_circumference = "(cm)...10",
          base_seedling_diameter = "(mm)",
          is_saliva_apiana_alive = "Yes, No, or Missing?",
-         notes = "as written on data sheet")
+         notes = "as written on data sheet") |> 
+  #removing rows without real data
+  filter(!is.na(page_num))
 
 ```
 
@@ -67,11 +70,13 @@ oak_data <-
     notes = "as written on data sheet"
   )
 
-#STILL NEED TO JOIN OCT DATA WITH REST!!!!!!!!!!!!!!!!
+#JOIN OCT DATA WITH REST
 
-View(oak_data)
-glimpse(oak_data)
-# 37 rows, 15 columns.
+oak_data_clean <- oak_data |> 
+  full_join(oct_data)
+
+View(oak_data_clean)
+glimpse(oak_data_clean)
 # To do:
 # oa_microclimate: Change NA to actual NAs
 # Change seedling_ht_cm data type to dbl, change NAs to NAs
@@ -79,12 +84,10 @@ glimpse(oak_data)
 # Same with num_dead_leaves
 # Same with leaf_greenness - investigate missing values
 # Same with num_germinated, rcd
-length(Survival_HeightApril26Blocks7_6Clean$tag_num)
-unique(Survival_HeightApril26Blocks7_6Clean$tag_num)
 ```
 
 ```{r}
-oak_data_clean <- oak_data |> 
+oak_data_clean <- oak_data_clean |> 
   separate(tag_num, into = c("tag_num", "acorn_num"), sep = "A") |> 
   mutate(tag_num = as.numeric(tag_num),
          acorn_num = as.numeric(acorn_num)) |> 
@@ -93,6 +96,43 @@ oak_data_clean <- oak_data |>
            seedling_ht_cm == 0 ~ "dead",
            seedling_ht_cm > 0 ~ NA
          ))
+```
+
+```{r}
+#Visualizations
+oak_data_clean |> ggplot()+
+  aes(x = treatment)+
+  geom_bar()
+
+oak_data_clean |> ggplot()+
+  aes(x = oak_type)+
+  geom_bar()
+
+oak_data_clean |> ggplot()+
+  aes(x = oa_microclimate)+
+  geom_bar()
+
+oak_data_clean |> ggplot()+
+  aes(x = seedling_ht_cm)+
+  geom_histogram()
+
+oak_data_clean |> ggplot()+
+  aes(x = num_leaves)+
+  geom_histogram()
+
+oak_data_clean |> ggplot()+
+  aes(x = num_dead_leaves)+
+  geom_histogram()
+
+oak_data_clean |> ggplot()+
+  aes(x = leaf_greenness)+
+  geom_histogram()
+
+#Questions I still have
+#Some plants they appear to have measured multiple times, while others they only measured once. 
+#What to do with tags w/o acorn numbers?
+#Potential outlier in leaf number?
+#
 ```
 
 ```{r}
