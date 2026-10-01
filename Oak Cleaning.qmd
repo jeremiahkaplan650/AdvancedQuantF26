@@ -133,16 +133,23 @@ oak_data_clean |> ggplot()+
 #What to do with tags w/o acorn numbers?
 #Potential outlier in leaf number?
 #
+
+oak_data_clean |> group_by(treatment) |> count()
+oak_data_clean |> group_by(oa_microclimate) |> count()
+
+#Research question: How does microclimate (DT/AC/OA) effect seedling survival?
+#Potentially use- ANOVA, Chi-squared, over time for an ANCOVA?
+#For Tuesday, get your data cleaned for analysis
 ```
 
 ```{r}
 #Amy is still working on this!!!!!!!!
-oak_data_clean |> 
+#oak_data_clean |> 
   select(tag_num, acorn_num) |> 
   distinct() |> 
   arrange(tag_num)
 
-acorn_id_table <- oak_data_clean |> 
+#acorn_id_table <- oak_data_clean |> 
   select(tag_num, block, treatment, oa_microclimate) |> 
   distinct() |> 
   arrange(tag_num) |> 
@@ -152,7 +159,7 @@ acorn_id_table <- oak_data_clean |>
                values_to = "acorn_num") |> 
   select(-whatever)
 
-oak_data_clean |>  full_join(acorn_id_table)
+#oak_data_clean |>  full_join(acorn_id_table)
 ```
 
 ```{r}
