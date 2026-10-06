@@ -100,7 +100,10 @@ oak_data_clean <- oak_data_clean |>
   #Change data types
   mutate(tag_num = as.numeric(tag_num),
          acorn_num = as.numeric(acorn_num),
-         date = as.Date(date)) |> 
+         date = as.Date(date)) |>
+  #pool jan and feb as one date
+  mutate(date = if_else(date == as.Date("2026-01-26"), as.Date("2026-02-26"), date
+  )) |> 
   mutate(leaf_greenness = as.numeric(leaf_greenness),
          base_seedling_circumference = as.numeric(base_seedling_circumference),
          base_seedling_diameter = as.numeric(base_seedling_diameter),
@@ -117,6 +120,27 @@ oak_data_clean <- oak_data_clean |>
     dead == 0 | dead == 1 ~ 1,
     .default = 0
   ))
+```
+
+```{r}
+#untidy data frame
+#make data frame that has untidy data frame- tag_num, acorn_num, oct, jan/feb, march, april, may- look at if it germinated, then if it's dead in 2 data frames.
+
+germinated_oaks <- oak_data_clean |> 
+  select(block, tag_num, acorn_num, date, oak_type, treatment, germinate) |> 
+  filter(oak_type == "A") |> 
+  mutate(date = factor(date, levels = c("2025-10-21", "2026-02-26", "2026-03-14",
+                                        "2026-04-21", "2026-05-05"))) |> 
+  pivot_wider(names_from = date, values_from = germinate, names_sort = TRUE)
+       
+dead_oaks <- oak_data_clean |> 
+  select(block, tag_num, acorn_num, date, oak_type, treatment, dead) |> 
+  filter(oak_type == "A") |> 
+  filter(!is.na(dead)) |> 
+  mutate(date = factor(date, levels = c("2025-10-21", "2026-02-26", "2026-03-14",
+                                        "2026-04-21", "2026-05-05"))) |> 
+  pivot_wider(names_from = date, values_from = dead, names_sort = TRUE)
+
 ```
 
 ```{r}
@@ -166,8 +190,6 @@ oak_data_clean |> group_by(oa_microclimate) |> count()
 ```{r}
 #count tag number at each date to determines how many times they looked at each tag over the experiment
 #number germinated over the different dates per tag number
-#pool jan and feb as one date
-#assume that make data frame that has untidy data frame- tag_num, acorn_num, oct, jan/feb, march, april, may- look at if it germinated, then if it's dead in 2 data frames.
 ```
 
 ```{r}
@@ -200,13 +222,6 @@ ggplot(treatment_summarized)+
 ggplot(treatment_summarized)+
   aes(x = treatment, y = n, fill = dead)+
   geom_col(position = 'dodge')
-```
-
-```{r}
-block_dates <- oak_data_treatment |> 
-  group_by(date, block)
-
-summarize(block_dates)
 ```
 
 ```{r}
