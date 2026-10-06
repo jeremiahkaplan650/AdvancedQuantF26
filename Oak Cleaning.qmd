@@ -22,6 +22,13 @@ oak_data <- list.files(path = "Oak Project/Data",
          na = "NA", sheet = "Input1",
          skip = 1) |> 
   bind_rows()
+
+may_data <- read_excel("Oak Project/Data/Survival_HeightMay26Blocks5-7Clean.xlsx", 
+                                                             na = 'NA', sheet = "Input1", skip = 1)
+
+oak_data <- bind_rows(oak_data, may_data)
+
+str(oak_data)
 ```
 
 ```{r}
@@ -92,22 +99,23 @@ oak_data_clean <- oak_data_clean |>
   separate(tag_num, into = c("tag_num", "acorn_num"), sep = "A") |> 
   #Change data types
   mutate(tag_num = as.numeric(tag_num),
-         acorn_num = as.numeric(acorn_num)) |> 
+         acorn_num = as.numeric(acorn_num),
+         date = as.Date(date)) |> 
   mutate(leaf_greenness = as.numeric(leaf_greenness),
          base_seedling_circumference = as.numeric(base_seedling_circumference),
          base_seedling_diameter = as.numeric(base_seedling_diameter),
          #create dead column. according to data sheets, rows with rcd, seedling height, num leaves, or base seedling diameter equaling zero are dead saplings. If any of those values are greater than zero, they are alive, and if they are all NAs, the sapling didn't germinate.
          dead = case_when(
            rcd == 0 | 
-             base_seedling_diameter == 0 ~ "dead",
+             base_seedling_diameter == 0 ~ 0,
            rcd > 0 | 
              base_seedling_diameter > 0 | 
              seedling_ht_cm > 0 | 
-             num_leaves > 0 ~ 'alive'),
+             num_leaves > 0 ~ 1),
          #Create germinate column bc why not
          germinate = case_when(
-    dead == "dead" | dead == "alive" ~ 'yes',
-    .default = 'no'
+    dead == 0 | dead == 1 ~ 1,
+    .default = 0
   ))
 ```
 
@@ -156,6 +164,13 @@ oak_data_clean |> group_by(oa_microclimate) |> count()
 ```
 
 ```{r}
+#count tag number at each date to determines how many times they looked at each tag over the experiment
+#number germinated over the different dates per tag number
+#pool jan and feb as one date
+#assume that make data frame that has untidy data frame- tag_num, acorn_num, oct, jan/feb, march, april, may- look at if it germinated, then if it's dead in 2 data frames.
+```
+
+```{r}
 #Filtering the three treatments of interest, excluding natural recruits.
 oak_data_treatment <- oak_data_clean |> 
   filter(treatment == "DT" | treatment == "AC" | treatment == "OA") |> 
@@ -167,7 +182,8 @@ oak_data_treatment <- oak_data_clean |>
 ```{r}
 treatment_summarized <- oak_data_treatment |>
   filter(!is.na(dead)) |>
-  count(dead, date, oak_type, treatment)
+  count(dead, date, oak_type, treatment) 
+  
 
 ggplot(treatment_summarized)+
   aes(x = date, y = n, fill = dead)+
@@ -187,12 +203,19 @@ ggplot(treatment_summarized)+
 ```
 
 ```{r}
+block_dates <- oak_data_treatment |> 
+  group_by(date, block)
+
+summarize(block_dates)
+```
+
+```{r}
 treatment_pct_surv <- oak_data_treatment |>
   filter(!is.na(dead)) |>
   group_by(treatment) |>
   summarise(
     total = n(),
-    n_alive = sum(dead == "alive"),
+    n_alive = sum(dead == 1),
     percent_survival = n_alive / total * 100
   )
 
