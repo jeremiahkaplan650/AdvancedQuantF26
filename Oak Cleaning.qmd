@@ -79,7 +79,7 @@ oak_data <-
 
 #JOIN OCT DATA WITH REST
 
-oak_data_clean <- oak_data |> 
+oak_data_joined <- oak_data |> 
   full_join(oct_data)
 
 #View(oak_data_clean)
@@ -95,7 +95,7 @@ oak_data_clean <- oak_data |>
 
 ```{r}
 #Separate tag number and acorn number
-oak_data_clean <- oak_data_clean |> 
+oak_data_clean <- oak_data_joined |> 
   separate(tag_num, into = c("tag_num", "acorn_num"), sep = "A") |> 
   #Change data types
   mutate(tag_num = as.numeric(tag_num),
@@ -110,9 +110,9 @@ oak_data_clean <- oak_data_clean |>
          #create dead column. according to data sheets, rows with rcd, seedling height, num leaves, or base seedling diameter equaling zero are dead saplings. If any of those values are greater than zero, they are alive, and if they are all NAs, the sapling didn't germinate.
          dead = case_when(
            rcd == 0 | 
-             base_seedling_diameter == 0 ~ 0,
+             base_seedling_circumference == 0 ~ 0,
            rcd > 0 | 
-             base_seedling_diameter > 0 | 
+             base_seedling_circumference > 0 | 
              seedling_ht_cm > 0 | 
              num_leaves > 0 ~ 1),
          #Create germinate column bc why not
@@ -189,6 +189,11 @@ oak_data_clean |> group_by(oa_microclimate) |> count()
 
 ```{r}
 #count tag number at each date to determines how many times they looked at each tag over the experiment
+
+tag_by_date<- oak_data_joined |> 
+  group_by(tag_num) |> 
+  summarize(n_dates = n_distinct(date))
+
 #number germinated over the different dates per tag number
 ```
 
@@ -233,6 +238,8 @@ treatment_pct_surv <- oak_data_treatment |>
     n_alive = sum(dead == 1),
     percent_survival = n_alive / total * 100
   )
+
+#issue with the above formula: n_alive counts the same seedlings recorded multiple months (if a seedling was found alive 4 times, it counts as 4 live seedlings). I need to make a new dataframe(?) that indicates if the seedling's last recorded state was alive.
 
 ggplot(treatment_pct_surv)+
   aes(x = treatment, y = percent_survival)+
