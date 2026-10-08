@@ -227,6 +227,10 @@ ggplot(treatment_summarized)+
 ggplot(treatment_summarized)+
   aes(x = treatment, y = n, fill = dead)+
   geom_col(position = 'dodge')
+
+ggplot(treatment_summarized)+
+  aes(x = oak_type, y = n, fill = dead)+
+  geom_col()
 ```
 
 ```{r}
@@ -244,6 +248,15 @@ treatment_pct_surv <- oak_data_treatment |>
 ggplot(treatment_pct_surv)+
   aes(x = treatment, y = percent_survival)+
   geom_col()
+
+#add error bars
+
+#problems with this graph:
+#n_alive counts the same seedlings recorded multiple months (if a seedling was found alive 4 times, it counts as 4 live seedlings). I need to make a new dataframe(?) that indicates if the seedling's last recorded state was alive.
+#This only counts seedlings recorded as dead, not ones that never germinated- aka mostly saplings died.
+
+#Need a new formula that includes seedlings that either never germinated or died- i.e. ones that did not survive. Also, it should only count the last date each seedling was recorded, so it doesn't double count seedlings.
+#Do I want to keep saplings? What about NRs? 
 ```
 
 ```{r}
